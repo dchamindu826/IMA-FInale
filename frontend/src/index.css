@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+/* Custom Scrollbar for a clean Glassmorphism look */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px; /* ගොඩක් සිහින් කරා */
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent; /* පාරදෘශ්‍ය කළා */
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2); /* සුදු පාටින් පොඩි opacity එකක් දුන්නා */
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* Hide scrollbar completely if you want (Optional) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

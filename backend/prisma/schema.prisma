@@ -1,0 +1,701 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model announcements {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  heading     String
+  message     String
+  business_id BigInt?   @db.UnsignedBigInt
+  batch_id    BigInt?   @db.UnsignedBigInt
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+
+  @@index([batch_id], map: "announcements_batch_id_foreign")
+  @@index([business_id], map: "announcements_business_id_foreign")
+}
+
+model answers {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  content_id BigInt    @db.UnsignedBigInt
+  questionNo Int
+  answerNo   Int
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+
+  @@index([content_id], map: "answers_content_id_foreign")
+}
+
+model attendances {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  content_id BigInt    @db.UnsignedBigInt
+  user_id    BigInt    @db.UnsignedBigInt
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+
+  @@index([content_id], map: "attendances_content_id_foreign")
+  @@index([user_id], map: "attendances_user_id_foreign")
+}
+
+model audit_trails {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  action      String
+  description String
+  user_id     BigInt    @db.UnsignedBigInt
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+
+  @@index([user_id], map: "audit_trails_user_id_foreign")
+}
+
+model batch_user {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id    BigInt    @db.UnsignedBigInt
+  batch_id   BigInt    @db.UnsignedBigInt
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+
+  @@index([batch_id], map: "batch_user_batch_id_foreign")
+  @@index([user_id], map: "batch_user_user_id_foreign")
+}
+
+model batches {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name        String
+  duration    Int?
+  description String?   @db.Text
+  status      Int       @default(1)
+  start_date  DateTime? @db.Date
+  business_id BigInt    @db.UnsignedBigInt
+  timeTable   String?
+  timeTable2  String?
+  type        Int       @default(1)
+  logo        String?   @db.Text
+  canEnroll   Int       @default(1)
+  itemOrder   Int       @default(1)
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+
+  @@index([business_id], map: "batches_business_id_foreign")
+}
+
+model businesses {
+  id                               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name                             String
+  logo                             String    @db.Text
+  description                      String    @db.Text
+  category                         String    @db.Text
+  status                           Int       @default(1)
+  isEnglish                        Boolean   @default(false)
+  minCourseCount                   Int?
+  discountAmount                   Decimal?  @db.Decimal(8, 2)
+  isDiscountEnabledForInstallments Boolean   @default(true)
+  isDeliveriesEnabled              Boolean   @default(false)
+  created_at                       DateTime? @db.Timestamp(0)
+  updated_at                       DateTime? @db.Timestamp(0)
+}
+
+model content_course {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  content_id BigInt    @db.UnsignedBigInt
+  course_id  BigInt    @db.UnsignedBigInt
+  type       Int
+  itemOrder  String    @default("0")
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+
+  @@index([content_id], map: "content_course_content_id_foreign")
+  @@index([course_id], map: "content_course_course_id_foreign")
+}
+
+model content_groups {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  title       String
+  itemOrder   Int       @default(1)
+  business_id BigInt    @db.UnsignedBigInt
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+
+  @@index([business_id], map: "content_groups_business_id_foreign")
+}
+
+model contents {
+  id               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  title            String
+  fileName         String?
+  date             DateTime? @db.Date
+  startTime        String?
+  endTime          String?
+  link             String?   @db.Text
+  type             Int
+  paper            String?
+  paperTime        Int?
+  questionCount    Int?
+  isFree           Boolean   @default(false)
+  youtubeLink      String?   @db.Text
+  zoomMeetingId    String?   @db.Text
+  content_group_id Int?
+  created_at       DateTime? @db.Timestamp(0)
+  updated_at       DateTime? @db.Timestamp(0)
+}
+
+model course_deliveries {
+  id                 BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  payment_id         String?   @db.Text
+  deliveryDate       DateTime? @db.Date
+  dStatus            String?   @db.Text
+  confirmDate        DateTime? @db.Date
+  tuteName           String?   @db.Text
+  group_id           BigInt    @db.UnsignedBigInt
+  student_id         BigInt?   @db.UnsignedBigInt
+  trackingNo         String?   @db.Text
+  studentConfirmDate DateTime? @db.Date
+  created_at         DateTime? @db.Timestamp(0)
+  updated_at         DateTime? @db.Timestamp(0)
+
+  @@index([group_id], map: "course_deliveries_group_id_foreign")
+  @@index([student_id], map: "course_deliveries_student_id_foreign")
+}
+
+model course_user {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id     BigInt    @db.UnsignedBigInt
+  course_id   BigInt    @db.UnsignedBigInt
+  pType       Int       @default(0)
+  isDelivered Int       @default(0)
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+
+  @@index([course_id], map: "course_user_course_id_foreign")
+  @@index([user_id], map: "course_user_user_id_foreign")
+}
+
+model courses {
+  id              BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name            String
+  price           Decimal?  @default(0.00) @db.Decimal(8, 2)
+  monthlyPrice    Decimal?  @default(0.00) @db.Decimal(8, 2)
+  discountedPrice Decimal?  @default(0.00) @db.Decimal(8, 2)
+  isAll           Boolean   @default(false)
+  description     String?   @db.Text
+  stream          String?
+  icon            String?
+  teacher_id      BigInt?   @db.UnsignedBigInt
+  isInitial       Boolean   @default(true)
+  isAllBatch      Boolean   @default(false)
+  group_id        BigInt    @db.UnsignedBigInt
+  status          Int       @default(1)
+  needForDiscount Boolean   @default(false)
+  itemOrder       Int?      @default(1)
+  type            Int       @default(1)
+  course_id       BigInt?
+  code            String?   @db.VarChar(100)
+  created_at      DateTime? @db.Timestamp(0)
+  updated_at      DateTime? @db.Timestamp(0)
+
+  @@index([group_id], map: "courses_group_id_foreign")
+  @@index([teacher_id], map: "courses_teacher_id_foreign")
+}
+
+model deliveries {
+  id                  BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  payment_id          BigInt?   @db.UnsignedBigInt
+  coordinationUser_id BigInt?   @db.UnsignedBigInt
+  cStatus             String?   @db.Text
+  feedback            String?   @db.Text
+  remarks             String?   @db.Text
+  cDueDate            DateTime? @db.Date
+  callType            String?   @db.Text
+  deliveryDate        DateTime? @db.Date
+  dStatus             String?   @db.Text
+  confirmDate         DateTime? @db.Date
+  tuteName            String?   @db.Text
+  group_id            BigInt    @db.UnsignedBigInt
+  student_id          BigInt?   @db.UnsignedBigInt
+  trackingNo          String?   @db.Text
+  created_at          DateTime? @db.Timestamp(0)
+  updated_at          DateTime? @db.Timestamp(0)
+
+  @@index([coordinationUser_id], map: "deliveries_coordinationuser_id_foreign")
+  @@index([group_id], map: "deliveries_group_id_foreign")
+  @@index([payment_id], map: "deliveries_payment_id_foreign")
+  @@index([student_id], map: "deliveries_student_id_foreign")
+}
+
+model delivery_teach {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  delivery_id BigInt    @db.UnsignedBigInt
+  teach_id    BigInt    @db.UnsignedBigInt
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+
+  @@index([delivery_id], map: "delivery_teach_delivery_id_foreign")
+  @@index([teach_id], map: "delivery_teach_teach_id_foreign")
+}
+
+model failed_jobs {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  uuid       String   @unique(map: "failed_jobs_uuid_unique")
+  connection String   @db.Text
+  queue      String   @db.Text
+  payload    String   @db.LongText
+  exception  String   @db.LongText
+  failed_at  DateTime @default(now()) @db.Timestamp(0)
+}
+
+model groups {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name       String
+  status     Int       @default(1)
+  type       Int
+  batch_id   BigInt    @db.UnsignedBigInt
+  itemOrder  Int       @default(1)
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+
+  @@index([batch_id], map: "groups_batch_id_foreign")
+}
+
+model home_posts {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  caption    String
+  image      String
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+}
+
+model installment_amounts {
+  id                    BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  amount                Decimal?  @default(0.00) @db.Decimal(8, 2)
+  installment_option_id BigInt    @db.UnsignedBigInt
+  created_at            DateTime? @db.Timestamp(0)
+  updated_at            DateTime? @db.Timestamp(0)
+
+  @@index([installment_option_id], map: "installment_amounts_installment_option_id_foreign")
+}
+
+model installment_options {
+  id                BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  installment_count Int
+  full_amount       Decimal?  @default(0.00) @db.Decimal(8, 2)
+  group_id          BigInt    @db.UnsignedBigInt
+  created_at        DateTime? @db.Timestamp(0)
+  updated_at        DateTime? @db.Timestamp(0)
+
+  @@index([group_id], map: "installment_options_group_id_foreign")
+}
+
+model installments {
+  id           BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  amount       Decimal?  @default(0.00) @db.Decimal(8, 2)
+  status       Int       @default(0) @db.TinyInt
+  due_date     DateTime? @db.Timestamp(0)
+  pType        String?
+  slipFileName String?
+  payment_id   BigInt    @db.UnsignedBigInt
+  bank         String?
+  approver_id  BigInt?
+  remark       String?   @db.Text
+  created_at   DateTime? @db.Timestamp(0)
+  updated_at   DateTime? @db.Timestamp(0)
+
+  @@index([payment_id], map: "installments_payment_id_foreign")
+}
+
+model migrations {
+  id        Int    @id @default(autoincrement()) @db.UnsignedInt
+  migration String
+  batch     Int
+}
+
+model other_courses {
+  id               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name             String
+  description      String?   @db.Text
+  price            Decimal?  @default(0.00) @db.Decimal(8, 2)
+  monthlyPrice     Decimal?  @default(0.00) @db.Decimal(8, 2)
+  discountedPrice  Decimal?  @default(0.00) @db.Decimal(8, 2)
+  price2           Decimal?  @default(0.00) @db.Decimal(8, 2)
+  monthlyPrice2    Decimal?  @default(0.00) @db.Decimal(8, 2)
+  discountedPrice2 Decimal?  @default(0.00) @db.Decimal(8, 2)
+  pType            Int
+  type             Int
+  status           Int
+  start_date       DateTime? @db.Date
+  course_id        BigInt?   @db.UnsignedBigInt
+  created_at       DateTime? @db.Timestamp(0)
+  updated_at       DateTime? @db.Timestamp(0)
+
+  @@index([course_id], map: "other_courses_course_id_foreign")
+}
+
+model password_reset_tokens {
+  email      String    @id
+  token      String
+  created_at DateTime? @db.Timestamp(0)
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model password_resets {
+  email      String
+  token      String
+  created_at DateTime? @db.Timestamp(0)
+
+  @@index([email], map: "password_resets_email_index")
+  @@ignore
+}
+
+model payments {
+  id                  BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  payment_id          String?   @unique(map: "payments_payment_id_unique")
+  currency            String?
+  payable_type        String
+  payable_id          BigInt    @db.UnsignedBigInt
+  payer_type          String
+  payer_id            BigInt    @db.UnsignedBigInt
+  validated           Boolean?
+  isLinked            Boolean   @default(false)
+  linked              Int?
+  summary             String?   @db.LongText
+  description         String?
+  pType               String?
+  slipFileName        String?
+  status              Int       @default(0) @db.TinyInt
+  amount              Decimal?  @default(0.00) @db.Decimal(8, 2)
+  subjectAmount       Decimal?  @default(0.00) @db.Decimal(8, 2)
+  course_id           BigInt    @db.UnsignedBigInt
+  student_id          BigInt    @db.UnsignedBigInt
+  approver_id         BigInt    @db.UnsignedBigInt
+  created_at          DateTime? @db.Timestamp(0)
+  updated_at          DateTime? @db.Timestamp(0)
+  isFree              Int       @default(0)
+  free_amount         Decimal?  @default(0.00) @db.Decimal(8, 2)
+  payment_month       DateTime? @db.Timestamp(0)
+  bank                String?
+  teacher_status      Boolean   @default(false)
+  isInstallment       Boolean   @default(false)
+  post_pay_date       DateTime? @db.Timestamp(0)
+  is_discount_applied Boolean   @default(false)
+  remark              String?   @db.Text
+
+  @@index([approver_id], map: "payments_approver_id_foreign")
+  @@index([course_id], map: "payments_course_id_foreign")
+  @@index([payable_type, payable_id], map: "payments_payable_type_payable_id_index")
+  @@index([payer_type, payer_id], map: "payments_payer_type_payer_id_index")
+  @@index([student_id], map: "payments_student_id_foreign")
+}
+
+model personal_access_tokens {
+  id             BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  tokenable_type String
+  tokenable_id   BigInt    @db.UnsignedBigInt
+  name           String
+  token          String    @unique(map: "personal_access_tokens_token_unique") @db.VarChar(64)
+  abilities      String?   @db.Text
+  last_used_at   DateTime? @db.Timestamp(0)
+  expires_at     DateTime? @db.Timestamp(0)
+  created_at     DateTime? @db.Timestamp(0)
+  updated_at     DateTime? @db.Timestamp(0)
+
+  @@index([tokenable_type, tokenable_id], map: "personal_access_tokens_tokenable_type_tokenable_id_index")
+}
+
+model posts {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  caption     String
+  image       String
+  business_id BigInt?   @db.UnsignedBigInt
+  batch_id    BigInt?   @db.UnsignedBigInt
+  title       String?
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+
+  @@index([batch_id], map: "posts_batch_id_foreign")
+  @@index([business_id], map: "posts_business_id_foreign")
+}
+
+model sessions {
+  id            String  @id
+  user_id       BigInt? @db.UnsignedBigInt
+  ip_address    String? @db.VarChar(45)
+  user_agent    String? @db.Text
+  payload       String  @db.LongText
+  last_activity Int
+
+  @@index([last_activity], map: "sessions_last_activity_index")
+  @@index([user_id], map: "sessions_user_id_index")
+}
+
+model settings {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name       String?   @db.Text
+  type       String?   @db.Text
+  value      String?   @db.Text
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+}
+
+model slides {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  title1      String
+  title2      String?
+  description String?   @db.Text
+  image       String
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+}
+
+model teach_user {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id     BigInt    @db.UnsignedBigInt
+  teach_id    BigInt    @db.UnsignedBigInt
+  pType       Int
+  isDelivered Int       @default(0)
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+
+  @@index([teach_id], map: "teach_user_teach_id_foreign")
+  @@index([user_id], map: "teach_user_user_id_foreign")
+}
+
+model teacher_payments {
+  id            BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  monthlyCount  Int?
+  fullCount     Int?
+  totalAmount   Decimal?  @default(0.00) @db.Decimal(8, 2)
+  payment_month DateTime? @db.Timestamp(0)
+  teacher_id    BigInt?   @db.UnsignedBigInt
+  created_at    DateTime? @db.Timestamp(0)
+  updated_at    DateTime? @db.Timestamp(0)
+
+  @@index([teacher_id], map: "teacher_payments_teacher_id_foreign")
+}
+
+model teacher_settings {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  subjectName String    @db.Text
+  name        String    @db.Text
+  degree      String?   @db.Text
+  image       String    @db.Text
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+}
+
+model teaches {
+  id               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  batch_id         BigInt    @db.UnsignedBigInt
+  course_id        BigInt    @db.UnsignedBigInt
+  price            Decimal?  @default(0.00) @db.Decimal(8, 2)
+  monthlyPrice     Decimal?  @default(0.00) @db.Decimal(8, 2)
+  discountedPrice  Decimal?  @default(0.00) @db.Decimal(8, 2)
+  teacher_id       BigInt?   @db.UnsignedBigInt
+  other_course_id  BigInt?   @db.UnsignedBigInt
+  price2           Decimal?  @default(0.00) @db.Decimal(8, 2)
+  monthlyPrice2    Decimal?  @default(0.00) @db.Decimal(8, 2)
+  discountedPrice2 Decimal?  @default(0.00) @db.Decimal(8, 2)
+  created_at       DateTime? @db.Timestamp(0)
+  updated_at       DateTime? @db.Timestamp(0)
+
+  @@index([batch_id], map: "teaches_batch_id_foreign")
+  @@index([course_id], map: "teaches_course_id_foreign")
+  @@index([other_course_id], map: "teaches_other_course_id_foreign")
+  @@index([teacher_id], map: "teaches_teacher_id_foreign")
+}
+
+model testimonials {
+  id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name        String
+  position    String?
+  description String?   @db.Text
+  image       String
+  rating      Int
+  created_at  DateTime? @db.Timestamp(0)
+  updated_at  DateTime? @db.Timestamp(0)
+}
+
+model tute_stock_course_delivery {
+  id                 BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  tute_stock_id      BigInt    @db.UnsignedBigInt
+  course_delivery_id BigInt    @db.UnsignedBigInt
+  created_at         DateTime? @db.Timestamp(0)
+  updated_at         DateTime? @db.Timestamp(0)
+
+  @@index([course_delivery_id], map: "tute_stock_course_delivery_course_delivery_id_foreign")
+  @@index([tute_stock_id], map: "tute_stock_course_delivery_tute_stock_id_foreign")
+}
+
+model tute_stocks {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  course_id  BigInt    @db.UnsignedBigInt
+  tuteName   String    @db.Text
+  stock      Int
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+
+  @@index([course_id], map: "tute_stocks_course_id_foreign")
+}
+
+model user_answers {
+  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id    BigInt    @db.UnsignedBigInt
+  content_id BigInt    @db.UnsignedBigInt
+  questionNo Int
+  answerNo   Int
+  created_at DateTime? @db.Timestamp(0)
+  updated_at DateTime? @db.Timestamp(0)
+
+  @@index([content_id], map: "user_answers_content_id_foreign")
+  @@index([user_id], map: "user_answers_user_id_foreign")
+}
+
+model user_papers {
+  id               BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id          BigInt    @db.UnsignedBigInt
+  content_id       BigInt    @db.UnsignedBigInt
+  correctCount     Int
+  userAnswer       String?   @db.Text
+  answerCorrection String?   @db.Text
+  resultType       String?   @db.Text
+  comment          String?   @db.Text
+  created_at       DateTime? @db.Timestamp(0)
+  updated_at       DateTime? @db.Timestamp(0)
+
+  @@index([content_id], map: "user_papers_content_id_foreign")
+  @@index([user_id], map: "user_papers_user_id_foreign")
+}
+
+model users {
+  id             BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  fName          String
+  lName          String
+  phone          String?
+  directPhone    String?
+  houseNo        String?
+  streetName     String?
+  village        String?
+  town           String?
+  district       String?
+  nic            String?
+  stream         String?
+  batch_id       BigInt?   @db.UnsignedBigInt
+  status         Int       @default(1)
+  role           String
+  image          String    @default("default.png")
+  description    String?   @db.Text
+  password       String
+  remember_token String?   @db.VarChar(100)
+  created_at     DateTime? @db.Timestamp(0)
+  updated_at     DateTime? @db.Timestamp(0)
+
+  @@index([batch_id], map: "users_batch_id_foreign")
+}
+
+// --- 1. LEADS & ASSIGNMENTS (MERGED WITH OLD TABLE) ---
+model leads {
+  id                  BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  fName               String
+  lName               String?
+  phone               String    @unique(map: "leads_phone_unique")
+  secondaryPhone      String?
+  leadType            String
+  source              String    @default("FB_BOOST")
+  business_id         BigInt?   @db.UnsignedBigInt
+  batch_id            BigInt?   @db.UnsignedBigInt
+  assigned_to         Int?      // Staff User ID
+  status              String    @default("NEW") // "NEW", "PHASE_1", "PHASE_2", "PHASE_3", "CLOSED"
+  coordinationUser_id BigInt?   @db.UnsignedBigInt
+  cStatus             String?   @db.Text
+  feedback            String?   @db.Text
+  remarks             String?   @db.Text
+  cDueDate            DateTime? @db.Date
+  callType            String?   @db.Text
+  created_at          DateTime? @db.Timestamp(0)
+  updated_at          DateTime? @db.Timestamp(0)
+
+  // (අපි call_logs relation එක මෙතනින් අයින් කරා)
+
+  @@index([batch_id], map: "leads_batch_id_foreign")
+  @@index([business_id], map: "leads_business_id_foreign")
+  @@index([coordinationUser_id], map: "leads_coordinationuser_id_foreign")
+}
+
+model batch_staff_assignments {
+  id             Int      @id @default(autoincrement())
+  batch_id       BigInt
+  staff_id       Int      // User ID of the staff
+  quota          Int      @default(100) // Auto assign limit
+  assigned_count Int      @default(0)   // Current assigned count
+  created_at     DateTime @default(now())
+}
+
+// --- 2. CALL CAMPAIGN LOGS ---
+model call_logs {
+  id         Int      @id @default(autoincrement())
+  lead_id    BigInt   // 🔥 Foreign Key Relation එක අයින් කරා, නිකම්ම ID එක විතරක් සේව් කරනවා
+  staff_id   Int
+  phase      Int      // 1, 2, or 3
+  attempts   Int      @default(1) // 1, 2, 3, 4, 5...
+  remark     String   // "Answer", "Pending", "No Answer", "Reject"
+  method     String   // "Normal", "WhatsApp", "3CX"
+  note       String?  @db.Text
+  created_at DateTime @default(now())
+}
+
+// --- 3. WHATSAPP CRM & AI BOT ---
+model auto_reply_rules {
+  id              Int      @id @default(autoincrement())
+  phase           String   // "FREE_SEMINAR", "AFTER_SEMINAR"
+  keyword         String?  // Trigger word
+  message         String   @db.Text
+  attachment_url  String?  // URL for Image/Video/Doc
+  attachment_type String?  // "image", "video", "document"
+  created_at      DateTime @default(now())
+}
+
+model whatsapp_templates {
+  id               Int      @id @default(autoincrement())
+  name             String
+  meta_template_id String   @unique
+  language         String   @default("en_US")
+  content          String   @db.Text
+  status           String   @default("PENDING") // "APPROVED", "PENDING", "REJECTED"
+  created_at       DateTime @default(now())
+}
+
+model quick_replies {
+  id         Int      @id @default(autoincrement())
+  title      String
+  message    String   @db.Text
+  created_at DateTime @default(now())
+}
+
+model chat_logs {
+  id           Int      @id @default(autoincrement())
+  phone        String   // Student/Lead phone number
+  sender_type  String   // "USER", "AI_BOT", "STAFF"
+  message      String   @db.Text
+  is_read      Boolean  @default(false)
+  created_at   DateTime @default(now())
+}
+
+// --- 4. DAILY TASKS & ROUTINES (Manager to Staff) ---
+model daily_tasks {
+  id            Int       @id @default(autoincrement())
+  staff_id      Int
+  batch_id      BigInt    @db.UnsignedBigInt
+  task_type     String    // "CREATE_ZOOM", "UPLOAD_REC", "UPLOAD_PDF", "COMMUNITY_MSG"
+  description   String    @db.Text
+  start_time    DateTime? // Task එක පටන් ගන්න වෙලාව
+  deadline      DateTime  // Task එක ඉවර කරන්න ඕනේ වෙලාව
+  is_completed  Boolean   @default(false)
+  is_locked     Boolean   @default(false) // Deadline පැනපු ගමන් මේක True වෙනවා
+  completed_at  DateTime?
+  unlock_reason String?   @db.Text
+  unlock_status String    @default("NONE") // "NONE", "REQUESTED", "APPROVED", "REJECTED"
+  created_at    DateTime  @default(now())
+}
