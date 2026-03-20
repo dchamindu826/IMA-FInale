@@ -1,133 +1,123 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { Building2, Plus, ArrowRight, Shield, UserCircle, Loader2 } from 'lucide-react';
+import { Plus, Loader2, ArrowLeft, Layers, Edit2, Trash2, Ban, CheckCircle, X } from 'lucide-react';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '../../api/axios';
 
-export default function BusinessManager() {
-  const [businesses, setBusinesses] = useState([]);
-  const [managers, setManagers] = useState([]); // System එකේ ඉන්න Managers ලා
+export default function BatchManager() {
+  const { businessId } = useParams();
+  const navigate = useNavigate();
+  
+  const [batches, setBatches] = useState([]);
+  const [businessInfo, setBusinessInfo] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showAddBatchModal, setShowAddBatchModal] = useState(false);
 
-  const fetchData = async () => {
+  const [batchForm, setBatchForm] = useState({
+    name: '', type: '1', description: '', itemOrder: '', logo: null
+  });
+
+  const fetchBatches = async () => {
     try {
-      // 1. Business ටික ගන්නවා
-      const busRes = await api.get('/admin/businesses');
-      setBusinesses(busRes.data || []);
-
-      // 2. Managers ලව ගන්නවා (Dropdown එකට)
-      const staffRes = await api.get('/admin/staff');
-      const filteredManagers = staffRes.data.filter(s => s.role.includes('Manager') || s.role === 'System Admin');
-      setManagers(filteredManagers);
-      
+      const res = await api.get(`/admin/batches/${businessId}`); 
+      setBatches(res.data?.batches || []); 
+      setBusinessInfo(res.data?.business || { name: 'Business' });
       setLoading(false);
     } catch (error) {
-      console.error(error);
+      toast.error("Failed to load batches.");
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    fetchBatches();
+  }, [businessId]);
 
-  // Manager Assign කරන Function එක
-  const handleAssignManager = async (businessId, type, managerId) => {
+  const handleAddBatch = async (e) => {
+    e.preventDefault();
+    const data = new FormData();
+    data.append('business_id', businessId);
+    Object.keys(batchForm).forEach(key => {
+        if(batchForm[key] !== null) data.append(key, batchForm[key]);
+    });
+
     try {
-      // Backend Endpoint එකට යවනවා 
-      // payload ex: { role: 'head_manager', staffId: 10 }
-      await api.put(`/admin/businesses/${businessId}/assign`, {
-        type: type, // 'head' or 'assistant'
-        staff_id: managerId
-      });
-      toast.success(`${type === 'head' ? 'Head Manager' : 'Asst. Manager'} assigned!`);
-      fetchData(); // Refresh UI
+      await api.post('/admin/batch/add', data, { headers: { 'Content-Type': 'multipart/form-data' }});
+      toast.success("Batch Added Successfully!");
+      setShowAddBatchModal(false);
+      fetchBatches();
     } catch (error) {
-      toast.error("Failed to assign manager.");
+      toast.error("Failed to add batch.");
     }
   };
 
-  if (loading) {
-    return <div className="flex h-full items-center justify-center"><Loader2 size={40} className="animate-spin text-blue-500" /></div>;
-  }
+  if (loading) return <div className="flex h-full items-center justify-center"><Loader2 size={40} className="animate-spin text-blue-400" /></div>;
 
   return (
-    <div className="w-full text-white animate-in fade-in duration-500">
-      
-      <div className="flex justify-between items-center mb-10">
-        <div>
-          <h2 className="text-3xl font-black tracking-wide">Businesses</h2>
-          <p className="text-gray-400 mt-1 text-sm">Manage educational institutes and assign authority.</p>
-        </div>
-        <button className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)] flex items-center gap-2 text-sm">
-          <Plus size={18} /> Create Business
+    <div className="w-full text-slate-200 animate-in fade-in duration-300 relative h-full">
+      <div className="flex items-center gap-4 mb-8 border-b border-white/10 pb-6">
+        <button onClick={() => navigate('/admin/businesses')} className="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all">
+            <ArrowLeft size={20} className="text-blue-400" />
         </button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {businesses.map((bus) => (
-          <div key={bus.id} className="bg-[#1e293b]/40 border border-white/5 p-6 rounded-3xl backdrop-blur-xl shadow-2xl hover:border-blue-500/20 transition-all flex flex-col group relative overflow-hidden">
-            
-            {/* Soft internal glow on hover */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/0 to-purple-600/0 group-hover:from-blue-600/5 group-hover:to-purple-600/5 transition-colors z-0 pointer-events-none"></div>
-
-            <div className="relative z-10">
-              <div className="flex justify-between items-start mb-5">
-                <div className="w-14 h-14 bg-gradient-to-br from-[#0f172a] to-[#1e293b] rounded-2xl flex items-center justify-center border border-white/5 shadow-inner">
-                  <Building2 size={24} className="text-blue-400" />
-                </div>
-                <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  {bus.status === 1 ? 'Active' : 'Disabled'}
-                </span>
-              </div>
-              
-              <h3 className="text-2xl font-bold text-white mb-1">{bus.name}</h3>
-              <p className="text-gray-400 text-xs font-medium tracking-wide">Category: {bus.category} &bull; {bus.isEnglish ? 'English Med.' : 'Sinhala Med.'}</p>
-            </div>
-            
-            <hr className="border-white/5 my-6 relative z-10" />
-
-            {/* MANAGER ASSIGNMENT SECTION */}
-            <div className="space-y-4 relative z-10 flex-1">
-              
-              {/* Head Manager */}
-              <div className="bg-[#030712]/40 p-3 rounded-xl border border-white/5">
-                <label className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                  <Shield size={12} /> Head Manager
-                </label>
-                <select 
-                  className="w-full bg-transparent border-none text-gray-200 text-sm outline-none appearance-none cursor-pointer"
-                  value={bus.head_manager_id || ""}
-                  onChange={(e) => handleAssignManager(bus.id, 'head', e.target.value)}
-                >
-                  <option value="" className="bg-slate-900">-- Unassigned --</option>
-                  {managers.map(m => <option key={m.id} value={m.id} className="bg-slate-900">{m.fName} {m.lName} ({m.role})</option>)}
-                </select>
-              </div>
-
-              {/* Assistant Manager */}
-              <div className="bg-[#030712]/40 p-3 rounded-xl border border-white/5">
-                <label className="text-[10px] font-bold text-purple-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                  <UserCircle size={12} /> Asst. Manager
-                </label>
-                <select 
-                  className="w-full bg-transparent border-none text-gray-200 text-sm outline-none appearance-none cursor-pointer"
-                  value={bus.ass_manager_id || ""}
-                  onChange={(e) => handleAssignManager(bus.id, 'assistant', e.target.value)}
-                >
-                  <option value="" className="bg-slate-900">-- Unassigned --</option>
-                  {managers.map(m => <option key={m.id} value={m.id} className="bg-slate-900">{m.fName} {m.lName}</option>)}
-                </select>
-              </div>
-
-            </div>
-
-            <button className="w-full mt-6 py-3.5 bg-white/5 hover:bg-blue-600 text-blue-400 hover:text-white border border-white/5 hover:border-transparent rounded-xl font-bold transition-all shadow-lg flex items-center justify-center gap-2 text-sm relative z-10">
-              Manage Batches <ArrowRight size={18} />
+        <div>
+          <h2 className="text-3xl font-bold text-white drop-shadow-md">Batches for {businessInfo?.name}</h2>
+          <p className="text-slate-400 mt-1 text-sm">Manage batches within this business.</p>
+        </div>
+        <div className="ml-auto flex gap-3">
+            <button onClick={() => setShowAddBatchModal(true)} className="bg-blue-600/80 hover:bg-blue-500 text-white px-5 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 border border-blue-400/30 backdrop-blur-md shadow-lg transition-all">
+                <Plus size={18} /> Add Batch
             </button>
-          </div>
-        ))}
+        </div>
       </div>
 
+      <div className="space-y-6 overflow-y-auto pb-10">
+        {batches.length === 0 ? (
+            <div className="bg-white/5 p-10 rounded-3xl text-center border border-white/10">
+                <Layers size={40} className="mx-auto text-slate-500 mb-4" />
+                <p className="text-slate-400">No batches found. Create one to get started.</p>
+            </div>
+        ) : (
+            batches.map((batch) => (
+                <div key={batch.id} className="bg-slate-800/40 border border-white/10 backdrop-blur-xl p-6 rounded-3xl shadow-xl flex flex-col group relative transition-all hover:border-blue-500/30">
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                            <div className="w-14 h-14 bg-slate-900/60 rounded-2xl flex items-center justify-center border border-white/10 shadow-inner overflow-hidden">
+                                {batch.logo ? <img src={`http://localhost:5000/storage/icons/${batch.logo}`} className="w-full h-full object-cover"/> : <Layers size={24} className="text-blue-300" />}
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-white leading-tight">{batch.name}</h3>
+                                <p className="text-slate-400 text-xs mt-1">{batch.description || "No description provided."}</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <button className="text-sm font-bold text-blue-400 bg-blue-500/10 hover:bg-blue-500 hover:text-white px-4 py-2 rounded-xl transition-all">
+                                View Groups & Courses
+                            </button>
+                            <button className="p-2 bg-red-500/10 text-red-400 rounded-lg"><Trash2 size={16} /></button>
+                        </div>
+                    </div>
+                </div>
+            ))
+        )}
+      </div>
+
+      {/* ADD BATCH MODAL */}
+      {showAddBatchModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-slate-800/90 backdrop-blur-2xl border border-white/20 rounded-3xl shadow-2xl w-full max-w-2xl p-8 relative">
+            <button onClick={() => setShowAddBatchModal(false)} className="absolute top-6 right-6 text-slate-400 hover:text-white"><X size={20} /></button>
+            <h3 className="text-2xl font-bold text-white mb-6">Add New Batch</h3>
+            <form onSubmit={handleAddBatch} className="space-y-4">
+              <input required type="text" placeholder="Batch Name" value={batchForm.name} onChange={e => setBatchForm({...batchForm, name: e.target.value})} className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white outline-none" />
+              <select required value={batchForm.type} onChange={e => setBatchForm({...batchForm, type: e.target.value})} className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white outline-none">
+                  <option value="1">Theory Only</option>
+                  <option value="2">Paper Only</option>
+              </select>
+              <button type="submit" className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl">Create Batch</button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -98,6 +98,10 @@ model businesses {
   isDeliveriesEnabled              Boolean   @default(false)
   created_at                       DateTime? @db.Timestamp(0)
   updated_at                       DateTime? @db.Timestamp(0)
+  
+  // 🔥 මේ පේළි දෙක හරියටම මෙතන තියෙන්න ඕනේ 🔥
+  head_manager_id                  Int?
+  ass_manager_id                   Int?
 }
 
 model content_course {
@@ -683,19 +687,60 @@ model chat_logs {
   created_at   DateTime @default(now())
 }
 
-// --- 4. DAILY TASKS & ROUTINES (Manager to Staff) ---
+// --- 4. DAILY TASKS (අලුත් Workflow එක) ---
 model daily_tasks {
-  id            Int       @id @default(autoincrement())
-  staff_id      Int
-  batch_id      BigInt    @db.UnsignedBigInt
-  task_type     String    // "CREATE_ZOOM", "UPLOAD_REC", "UPLOAD_PDF", "COMMUNITY_MSG"
-  description   String    @db.Text
-  start_time    DateTime? // Task එක පටන් ගන්න වෙලාව
-  deadline      DateTime  // Task එක ඉවර කරන්න ඕනේ වෙලාව
-  is_completed  Boolean   @default(false)
-  is_locked     Boolean   @default(false) // Deadline පැනපු ගමන් මේක True වෙනවා
-  completed_at  DateTime?
-  unlock_reason String?   @db.Text
-  unlock_status String    @default("NONE") // "NONE", "REQUESTED", "APPROVED", "REJECTED"
-  created_at    DateTime  @default(now())
+  id               Int       @id @default(autoincrement())
+  staff_id         Int
+  batch_id         BigInt    @db.UnsignedBigInt
+  schedule_id      Int?      // 🔥 මේක තමයි අර Error එක ආපු Column එක 🔥
+  
+  task_type        String    
+  description      String    @db.Text
+  
+  // 🔥 Time Limits (ඔයා ඉල්ලපු විදියට) 🔥
+  start_date       DateTime? @db.Date
+  deadline_date    DateTime? @db.Date
+  start_time       String?
+  end_time         String?
+  
+  // Staff Submission & Approvals
+  is_completed     Boolean   @default(false)
+  submitted_proof  String?   @db.Text  
+  submitted_at     DateTime? 
+  
+  // Manager Action & Gamification
+  manager_status   String    @default("PENDING") // PENDING, SUBMITTED, APPROVED, REJECTED
+  reject_reason    String?   @db.Text
+  resubmit_count   Int       @default(0) // 🔥 Reject වුනාම වැඩිවෙනවා, Success rate එක අඩුවෙනවා 🔥
+  
+  is_locked        Boolean   @default(false) 
+  created_at       DateTime  @default(now())
+}
+
+// --- 5. SUBJECT & TASK TEMPLATES ---
+model subject_templates {
+  id          Int      @id @default(autoincrement())
+  business_id BigInt   @db.UnsignedBigInt
+  name        String   
+  created_at  DateTime @default(now())
+}
+
+model task_templates {
+  id             Int      @id @default(autoincrement())
+  business_id    BigInt   @db.UnsignedBigInt
+  title          String   
+  has_time_limit Boolean  @default(false)
+  created_at     DateTime @default(now())
+}
+
+// --- 6. CLASS SCHEDULES (Timetable Entries) ---
+model class_schedules {
+  id          Int      @id @default(autoincrement())
+  batch_id    BigInt   @db.UnsignedBigInt
+  subject     String   
+  date        DateTime @db.Date
+  start_time  String
+  end_time    String
+  content     String   @db.Text
+  created_at  DateTime @default(now())
 }

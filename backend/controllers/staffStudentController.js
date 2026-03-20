@@ -216,7 +216,10 @@ const assignBusinessManager = async (req, res) => {
         const { type, staff_id } = req.body;
         const userId = req.user.id;
 
+        console.log("Assigning Manager:", { businessId, type, staff_id }); // Debugging වලට ලේසියි
+
         // payload type එක 'head' ද 'assistant' ද කියලා බලනවා
+        // මෙතන staff_id එක අනිවාර්යයෙන්ම Number එකක් කරනවා.
         const updateData = type === 'head' 
             ? { head_manager_id: staff_id ? parseInt(staff_id) : null }
             : { ass_manager_id: staff_id ? parseInt(staff_id) : null };
@@ -238,6 +241,7 @@ const assignBusinessManager = async (req, res) => {
 
         return res.status(200).json({ message: 'Manager Assigned Successfully!' });
     } catch (error) {
+        console.error("Error Assigning Manager:", error); // 500 error ආවොත් Terminal එකේ වැටෙයි හේතුව
         return res.status(500).json({ message: error.message });
     }
 };

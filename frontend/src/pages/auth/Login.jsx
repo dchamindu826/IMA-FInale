@@ -15,7 +15,6 @@ export default function Login({ setLoggedInUser }) {
     setLoading(true);
 
     try {
-      // 🔥 මෙතන '/auth/login' කියලා දැම්මා (Backend එකේ Route එක මේක වෙන්න ඕනේ)
       const res = await api.post('/auth/login', { username, password }); 
       
       if (res.data.token && res.data.user) {
@@ -25,11 +24,16 @@ export default function Login({ setLoggedInUser }) {
         setLoggedInUser(res.data.user);
         toast.success(`Welcome back, ${res.data.user.fName}!`);
         
-        // Role-based Redirect
-        if(res.data.user.role === 'user' || res.data.user.role === 'student') {
+        // 🔥 Role-based Redirect 🔥
+        const role = res.data.user.role;
+        if(role === 'user' || role === 'student') {
             navigate('/student/dashboard');
+        } else if (role === 'Manager' || role === 'Ass Manager') {
+            navigate('/manager/dashboard'); // 🔥 අලුත් Manager Route එක
+        } else if (role === 'Coordinator') {
+            navigate('/coordinator/dashboard'); // ඉස්සරහට එන ඒවා
         } else {
-            navigate('/admin/dashboard');
+            navigate('/admin/dashboard'); // Default (System Admin / Director)
         }
       }
     } catch (error) {
@@ -41,15 +45,13 @@ export default function Login({ setLoggedInUser }) {
 
   return (
     <div className="relative min-h-screen bg-[#0A0F1C] flex items-center justify-center p-4 font-sans overflow-hidden">
-      
-      {/* 🔥 EXACT BACKGROUND GLOWS MATCHING YOUR SCREENSHOT 🔥 */}
       <div className="absolute top-0 left-0 w-[50rem] h-[50rem] bg-blue-600/20 rounded-full blur-[130px] -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
       <div className="absolute bottom-0 right-0 w-[50rem] h-[50rem] bg-red-600/20 rounded-full blur-[130px] translate-x-1/3 translate-y-1/3 pointer-events-none"></div>
 
       <div className="relative z-10 w-full max-w-[400px] bg-[#111827]/80 backdrop-blur-xl border border-white/5 p-8 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.5)]">
         
         <div className="text-center mb-10">
-          <img src="/logo.png" alt="Logo" className="h-55 mx-auto -mb-10 drop-shadow-lg" />
+          <img src="/logo.png" alt="Logo" className="h-28 mx-auto mb-2 drop-shadow-lg object-contain" />
           <h2 className="text-xl font-bold text-white tracking-wide">System Login</h2>
           <p className="text-gray-400 text-xs mt-2">Enter your credentials to continue</p>
         </div>
@@ -61,11 +63,7 @@ export default function Login({ setLoggedInUser }) {
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <User size={16} className="text-gray-500" />
               </div>
-              <input 
-                type="text" 
-                required 
-                value={username} 
-                onChange={(e) => setUsername(e.target.value)}
+              <input type="text" required value={username} onChange={(e) => setUsername(e.target.value)}
                 className="w-full bg-[#030712]/50 border border-white/5 rounded-xl pl-11 pr-4 py-3.5 text-gray-200 placeholder-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-sm"
                 placeholder="Enter your username"
               />
@@ -78,20 +76,14 @@ export default function Login({ setLoggedInUser }) {
               <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                 <Lock size={16} className="text-gray-500" />
               </div>
-              <input 
-                type="password" 
-                required 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)}
+              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-[#030712]/50 border border-white/5 rounded-xl pl-11 pr-4 py-3.5 text-gray-200 placeholder-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-sm"
                 placeholder="••••••••"
               />
             </div>
           </div>
 
-          <button 
-            type="submit" 
-            disabled={loading}
+          <button type="submit" disabled={loading}
             className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-[0_0_15px_rgba(37,99,235,0.4)] disabled:opacity-50 flex items-center justify-center gap-2 mt-4 text-sm"
           >
             {loading ? <Loader2 size={18} className="animate-spin" /> : 'Login'}

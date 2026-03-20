@@ -254,23 +254,30 @@ const getBusinesses = async (req, res) => {
         let businesses;
 
         if (user.role === "teacher") {
-            // Teacher kenek nam, eyata assign wela thiyena businesses witharak gannawa
             const courseUsers = await prisma.course_user.findMany({ where: { user_id: BigInt(user.id) } });
             const courseIds = courseUsers.map(cu => cu.course_id);
-            
             const courses = await prisma.courses.findMany({ where: { id: { in: courseIds } } });
             const groupIds = [...new Set(courses.map(c => c.group_id))];
-            
             const groups = await prisma.groups.findMany({ where: { id: { in: groupIds } } });
             const batchIds = [...new Set(groups.map(g => g.batch_id))];
-            
             const batches = await prisma.batches.findMany({ where: { id: { in: batchIds } } });
             const businessIds = [...new Set(batches.map(b => b.business_id))];
-
             businesses = await prisma.businesses.findMany({ where: { id: { in: businessIds } } });
-        } else {
-            // Admin/Superadmin nam okkoma businesses pennanawa
+            
+        } else if (user.role === "superadmin") {
+            // Superadmin ට ඔක්කොම පේනවා
             businesses = await prisma.businesses.findMany();
+            
+        } else {
+            // 🔥 Manager ලට එයාලගේ Business එක විතරක් යවනවා 🔥
+            businesses = await prisma.businesses.findMany({
+                where: {
+                    OR: [
+                        { head_manager_id: parseInt(user.id) },
+                        { ass_manager_id: parseInt(user.id) }
+                    ]
+                }
+            });
         }
 
         return res.status(200).json(safeJson({ businesses }));
@@ -1107,14 +1114,354 @@ const deleteContent = async (req, res) => {
     }
 };
 
+
+// backend/controllers/adminController.js (අගට මේක එකතු කරන්න)
+const getManagerOverview = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // 1. Manager ට Assign වෙලා තියෙන Business එක හොයනවා
+        const business = await prisma.businesses.findFirst({
+            where: {
+                OR: [
+                    { head_manager_id: parseInt(userId) },
+                    { ass_manager_id: parseInt(userId) }
+                ]
+            }
+        });
+
+        // Business එකක් Assign වෙලා නැත්නම්
+        if (!business) {
+            return res.status(200).json({ hasBusiness: false });
+        }
+
+        // 2. Batches ගාණ හොයනවා
+        const totalBatches = await prisma.batches.count({
+            where: { business_id: business.id }
+        });
+
+        // 3. Students ගාණ හොයනවා (මේක ඔයාගේ db එක අනුව වෙනස් වෙන්න පුළුවන්)
+        // උදාහරණයක් විදියට මේ Business එකට අදාල ළමයි ගාණ
+        const totalStudents = await prisma.users.count({
+            where: { role: 'user' } // සාමාන්‍යයෙන් student ලා
+        });
+
+        // 4. Chart එකට Batch අනුව Revenue එක ගන්නවා (උදාහරණයක්)
+        // මේක ඔයාගේ payment table එකෙන් join කරලා ගන්න ඕනේ. දැනට සරලව යවනවා.
+        const revenueData = [
+            { name: 'Batch 01', revenue: 45000 },
+            { name: 'Batch 02', revenue: 78000 },
+            { name: 'Batch 03', revenue: 32000 }
+        ];
+
+        return res.status(200).json({
+            hasBusiness: true,
+            business: {
+                id: business.id.toString(),
+                name: business.name,
+                logo: business.logo,
+                category: business.category
+            },
+            stats: {
+                totalBatches: totalBatches,
+                totalStudents: totalStudents + 120, // Real query එක දාගන්න
+                totalRevenue: 155000 // Real query එක දාගන්න
+            },
+            revenueData: revenueData
+        });
+
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Server Error" });
+    }
+};
+
+// 🔥 1. Manager ගේ Batches ටික ගන්න API එක
+// backend/controllers/adminController.js
+const getManagerBatches = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const business = await prisma.businesses.findFirst({
+            where: { OR: [{ head_manager_id: parseInt(userId) }, { ass_manager_id: parseInt(userId) }] }
+        });
+
+        if (!business) return res.status(200).json([]);
+
+        const batches = await prisma.batches.findMany({
+            where: { business_id: business.id },
+            select: { id: true, name: true, status: true }
+        });
+        
+        // 🔥 Fix: BigInt Error එක නැති කරන්න ID එක String එකක් කරනවා 🔥
+        const formattedBatches = batches.map(b => ({
+            id: b.id.toString(), 
+            name: b.name, 
+            status: b.status
+        }));
+
+        return res.status(200).json(formattedBatches);
+    } catch (error) {
+        console.error("Batches Fetch Error:", error);
+        return res.status(500).json({ message: "Server Error" });
+    }
+};
+
+// 🔥 2. තෝරපු Batch එකේ Schedule (Contents) ටික ගන්න API එක (Calendar එකට)
+const getBatchSchedule = async (req, res) => {
+    try {
+        const { batchId, year, month } = req.query;
+        
+        // මාසේ මුල සහ අග හොයාගන්නවා
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 0);
+
+        // දැනට dummy විදියට Database එකෙන් ගන්න logic එක ලියලා තියෙන්නේ. 
+        // ඔයාගේ 'contents' table එකට batch එක link වෙන විදිය අනුව මේක update කරගන්න.
+        /* const schedules = await prisma.contents.findMany({
+            where: {
+                date: { gte: startDate, lte: endDate },
+                // batch filter එක මෙතනට එන්න ඕනේ (content_course -> course -> group -> batch)
+            }
+        });
+        */
+
+        // Frontend එකේ Calendar එක Check කරන්න දැනට Dummy Data ටිකක් යවනවා
+        const dummySchedules = [
+            { id: 1, title: "Theory Live Class", date: `${year}-${String(month).padStart(2, '0')}-10`, startTime: "18:00", endTime: "20:00", type: "Live" },
+            { id: 2, title: "Monthly Past Paper", date: `${year}-${String(month).padStart(2, '0')}-15`, startTime: "14:00", endTime: "17:00", type: "Exam" },
+            { id: 3, title: "Revision Session", date: `${year}-${String(month).padStart(2, '0')}-28`, startTime: "19:00", endTime: "21:00", type: "Live" }
+        ];
+
+        return res.status(200).json(dummySchedules);
+    } catch (error) {
+        return res.status(500).json({ message: "Server Error" });
+    }
+};
+
+const getCoordinatorOverview = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        
+        // 1. User ව හොයාගන්නවා
+        const user = await prisma.users.findUnique({ where: { id: parseInt(userId) } });
+        if (!user || !user.batch_id) return res.status(404).json({ message: "No batch assigned" });
+
+        // 2. Batch එකයි, ඒක අයිති Business එකයි හොයාගන්නවා
+        const batch = await prisma.batches.findUnique({ where: { id: user.batch_id } });
+        const business = batch ? await prisma.businesses.findUnique({ where: { id: batch.business_id } }) : null;
+
+        // 3. ඒ Batch එකට අදාල Groups ටික ගන්නවා
+        const groups = await prisma.groups.findMany({ where: { batch_id: user.batch_id } });
+
+        // 4. ඒ Batch එකේ Schedules (Classes) ටික අද දවසට ගන්නවා
+        const today = new Date().toISOString().split('T')[0];
+        const todayClasses = await prisma.class_schedules.findMany({
+            where: { batch_id: user.batch_id, date: new Date(today) }
+        });
+
+        // 5. Coordinator ට අදාල Pending Tasks ටික ගන්නවා
+        const myTasks = await prisma.daily_tasks.findMany({
+            where: { staff_id: parseInt(userId), is_completed: false }
+        });
+
+        return res.status(200).json(safeJson({
+            user,
+            business,
+            batch,
+            groups,
+            todayClasses,
+            pendingTasksCount: myTasks.length
+        }));
+
+    } catch (error) {
+        console.error("Coordinator Overview Error:", error);
+        return res.status(500).json({ message: "Server Error" });
+    }
+};
+
+const getManagerFullBatches = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        
+        // 1. Manager ගේ Business එක හොයනවා
+        const business = await prisma.businesses.findFirst({
+            where: { OR: [{ head_manager_id: parseInt(userId) }, { ass_manager_id: parseInt(userId) }] }
+        });
+
+        if (!business) return res.status(200).json([]);
+
+        // 2. Prisma Relations අවුල් නිසා වෙන වෙනම අරන් Map කරනවා (Safe Method)
+        const batches = await prisma.batches.findMany({
+            where: { business_id: business.id }
+        });
+
+        if (batches.length === 0) return res.status(200).json([]);
+
+        const batchIds = batches.map(b => b.id);
+
+        const groups = await prisma.groups.findMany({
+            where: { batch_id: { in: batchIds } }
+        });
+
+        const groupIds = groups.map(g => g.id);
+
+        const courses = await prisma.courses.findMany({
+            where: { group_id: { in: groupIds } }
+        });
+
+        // 3. Batches ඇතුලට Groups, Groups ඇතුලට Courses දානවා (Manual Nesting)
+        const formattedBatches = batches.map(batch => {
+            const batchGroups = groups.filter(g => g.batch_id.toString() === batch.id.toString()).map(group => {
+                const groupCourses = courses.filter(c => c.group_id.toString() === group.id.toString());
+                return { ...group, courses: groupCourses };
+            });
+            return { ...batch, groups: batchGroups };
+        });
+
+        return res.status(200).json(safeJson(formattedBatches));
+        
+    } catch (e) { 
+        // 🔥 Error එකක් ආවොත් Terminal එකේ පැහැදිලිව පෙන්නන්න මේක දැම්මා 🔥
+        console.error("Batches Fetch Error:", e);
+        return res.status(500).json({ message: "Server Error: " + e.message }); 
+    }
+};
+
+// 🔥 1. Mass Assignment (Fixed 500 Error with File Uploads)
+const addContentMassAssign = async (req, res) => {
+    try {
+        const { type, title, link, date, startTime, endTime, isFree, selectedCourses, contentGroupId } = req.body;
+
+        let typeInt = 1;
+        if (type === 'recording') typeInt = 2;
+        else if (type === 'document') typeInt = 3;
+        else if (type === 'sPaper') typeInt = 4;
+        else if (type === 'paper') typeInt = 5;
+
+        // Document එකක් නම් Upload කරපු File එකේ නම ගන්නවා
+        const fileName = req.file ? req.file.filename : null;
+
+        const content = await prisma.contents.create({
+            data: {
+                title, 
+                link: link || null, 
+                fileName: fileName, // File එක මෙතන සේව් වෙනවා
+                type: typeInt, 
+                date: date ? new Date(date) : null,
+                startTime: startTime || null, 
+                endTime: endTime || null, 
+                isFree: Boolean(isFree),
+                content_group_id: contentGroupId ? parseInt(contentGroupId) : null,
+                created_at: new Date(),
+                updated_at: new Date()
+            }
+        });
+
+        // Parse array of selected courses
+        const coursesArray = typeof selectedCourses === 'string' ? JSON.parse(selectedCourses) : selectedCourses;
+
+        if (coursesArray && coursesArray.length > 0) {
+            for (let courseId of coursesArray) {
+                const order = await prisma.content_course.findFirst({
+                    where: { course_id: BigInt(courseId), type: typeInt },
+                    orderBy: { itemOrder: 'desc' }
+                });
+                
+                const itemOrder = order && order.itemOrder ? (parseInt(order.itemOrder) + 1).toString() : "1";
+
+                await prisma.content_course.create({
+                    data: {
+                        content_id: content.id,
+                        course_id: BigInt(courseId),
+                        type: typeInt,
+                        itemOrder: itemOrder,
+                        created_at: new Date(),
+                        updated_at: new Date()
+                    }
+                });
+            }
+        }
+
+        return res.status(200).json({ message: "Content Successfully Published!" });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Server Error" });
+    }
+};
+
+// 🔥 2. Batch Update, Delete, Status (Missing APIs)
+const updateBatch = async (req, res) => {
+    try {
+        const { batch_id, name, description, batchType, itemOrder } = req.body;
+        const data = { name, description, type: parseInt(batchType), itemOrder: parseInt(itemOrder || 1), updated_at: new Date() };
+        if (req.file) data.logo = req.file.filename;
+
+        await prisma.batches.update({ where: { id: BigInt(batch_id) }, data });
+        return res.status(200).json({ message: 'Batch Updated!' });
+    } catch (e) { return res.status(500).json({ message: e.message }); }
+};
+
+const changeBatchStatus = async (req, res) => {
+    try {
+        const { batch_id, status } = req.body;
+        await prisma.batches.update({ where: { id: BigInt(batch_id) }, data: { status: parseInt(status) } });
+        return res.status(200).json({ message: 'Status Updated!' });
+    } catch (e) { return res.status(500).json({ message: e.message }); }
+};
+
+const deleteBatch = async (req, res) => {
+    try {
+        const { batch_id } = req.body;
+        await prisma.batches.delete({ where: { id: BigInt(batch_id) } });
+        return res.status(200).json({ message: 'Batch Deleted!' });
+    } catch (e) { return res.status(500).json({ message: e.message }); }
+};
+
+
+// --- Course එකකට අදාල Contents (Live, Rec, Docs) ටික ගන්න API එක ---
+const getCourseContents = async (req, res) => {
+    try {
+        const { courseId } = req.params;
+        
+        // 1. Course එකට ලින්ක් වෙලා තියෙන Contents ටික content_course table එකෙන් හොයනවා
+        const contentLinks = await prisma.content_course.findMany({
+            where: { course_id: BigInt(courseId) },
+            orderBy: { itemOrder: 'asc' } // Order එකට ගන්නවා
+        });
+
+        if (contentLinks.length === 0) return res.status(200).json([]);
+
+        // 2. ඒ ID වලට අදාල නියම Contents ටික contents table එකෙන් ගන්නවා
+        const contentIds = contentLinks.map(c => c.content_id);
+        const contents = await prisma.contents.findMany({
+            where: { id: { in: contentIds } }
+        });
+
+        // 3. Frontend එකට ඕනේ විදියට Map කරලා (BigInt අවුල හදලා) යවනවා
+        const formattedContents = contents.map(c => {
+            const linkData = contentLinks.find(cl => cl.content_id === c.id);
+            return {
+                ...c,
+                id: c.id.toString(), // BigInt error එක fix කරන්න
+                itemOrder: linkData ? linkData.itemOrder : "0"
+            };
+        });
+
+        return res.status(200).json(formattedContents);
+    } catch (e) {
+        console.error("Fetch Contents Error:", e);
+        return res.status(500).json({ message: "Server Error" });
+    }
+};
+
 module.exports = { 
     index, 
     addAnnouncement, updateAnnouncement, deleteAnnouncement,
-    addPost,
-    getBusinesses, addBusiness, editBusiness, changeBusinessStatus,
-    getBatches, addBatch,
-    addGroup, updateGroup, deleteGroup,
-    addCourse, updateCourse, changeCourseStatus, deleteCourse, 
-    addContentGroup, updateContentGroup, deleteContentGroup,
-    addClass, addRecording, addDocument, deleteContent 
+    addPost,getBusinesses, addBusiness, editBusiness, changeBusinessStatus,
+    getBatches, addBatch,addGroup, updateGroup, deleteGroup,addCourse, updateCourse,
+     changeCourseStatus, deleteCourse, addContentGroup, updateContentGroup, deleteContentGroup,
+    addClass, addRecording, addDocument, deleteContent, getManagerOverview,
+    getManagerBatches, getBatchSchedule, getCoordinatorOverview,
+    getManagerFullBatches, addContentMassAssign, getCourseContents,
+    updateBatch, changeBatchStatus, deleteBatch
 };

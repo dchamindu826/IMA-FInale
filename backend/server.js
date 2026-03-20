@@ -9,6 +9,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const crmRoutes = require('./routes/crmRoutes');
 const whatsappRoutes = require('./routes/whatsappRoutes');
 const taskRoutes = require('./routes/taskRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/crm', crmRoutes);
 app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/payments', paymentRoutes);
 
 const PORT = process.env.PORT || 5000;
 

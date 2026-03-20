@@ -4,23 +4,22 @@ const multer = require('multer');
 const path = require('path');
 const { protect } = require('../middleware/authMiddleware');
 
+// 🔥 ඔක්කොම එකම තැනින් Import කරනවා 🔥
 const { 
     index, addAnnouncement, updateAnnouncement, deleteAnnouncement, addPost,
     getBusinesses, addBusiness, editBusiness, changeBusinessStatus, getBatches, addBatch,
     addGroup, updateGroup, deleteGroup,
     addCourse, updateCourse, changeCourseStatus, deleteCourse,
     addContentGroup, updateContentGroup, deleteContentGroup,
-    addClass, addRecording, addDocument, deleteContent 
+    addClass, addRecording, addDocument, deleteContent, getManagerBatches, getBatchSchedule,
+    getCoordinatorOverview, getManagerFullBatches, addContentMassAssign, getCourseContents,
+    updateBatch, changeBatchStatus, deleteBatch, getManagerOverview
 } = require('../controllers/adminController');
 
 const { addPaper, addStructuredPaper, addMarkingAnswer } = require('../controllers/paperController');
-
-// 🔥 මෙන්න මෙතනට තමයි deleteStaff සහ assignBusinessManager ටිකත් දැම්මේ (එකපාරයි Import වෙන්නේ)
-const { getStaff, addStaff, viewStaff, addTeacherPaymentInfo, viewStudent, deleteStaff, assignBusinessManager } = require('../controllers/staffStudentController');
-
+const { getStaff, addStaff, viewStaff, addTeacherPaymentInfo, viewStudent, deleteStaff, assignBusinessManager, updateStaff } = require('../controllers/staffStudentController');
 const { addTuteStock, updateTuteStock, updateLeadsData, updateCoordinationDelivery, updateDelivery } = require('../controllers/deliveryController');
 const { addOtherCourse, updateOtherCourse, deleteOtherCourse, addBatchOtherCourse, updateOtherCourseTeacher } = require('../controllers/otherCourseController');
-
 const { 
     addHomePost, updateHomePost, deleteHomePost,
     addNewSlide, updateSlide, deleteSlide,
@@ -29,10 +28,9 @@ const {
     addNewTeacherInfo, updateTeacherInfo, deleteTeacherInfo,
     updateBusinessDetails, getAuditTrail 
 } = require('../controllers/settingsController');
-
 const { addNewLead } = require('../controllers/commonController');
 
-// --- Multer Configs (ඔයාගේ පරණ ටිකමයි) ---
+// --- Multer Configs ---
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, path.join(__dirname, '../public/posts')),
     filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
@@ -63,9 +61,10 @@ const userImgStorage = multer.diskStorage({
 });
 const uploadUserImg = multer({ storage: userImgStorage });
 
-const { updateStaff } = require('../controllers/staffStudentController');
 
 // --- ROUTES ---
+
+
 router.get('/dashboard', protect, index);
 router.post('/announcement/add', protect, addAnnouncement);
 router.put('/announcement/update', protect, updateAnnouncement);
@@ -148,5 +147,21 @@ router.get('/audit-trail', protect, getAuditTrail);
 
 router.post('/lead/add', protect, addNewLead);
 router.put('/staff/update/:id', protect, updateStaff);
+
+//mangers dashboard
+router.get('/manager/overview', protect, getManagerOverview);
+router.get('/manager/batches', protect, getManagerBatches);
+router.get('/manager/schedule', protect, getBatchSchedule);
+
+router.get('/coordinator/overview', protect, getCoordinatorOverview);
+router.get('/manager/batches-full', protect, getManagerFullBatches);
+router.post('/manager/contents/mass-assign', protect, uploadDoc.single('file'), addContentMassAssign);
+
+router.get('/manager/courses/:courseId/contents', protect, getCourseContents);
+router.put('/batch/update', protect, uploadIcon.single('logo'), updateBatch);
+router.put('/batch/status', protect, changeBatchStatus);
+router.delete('/batch/delete', protect, deleteBatch);
+
+
 
 module.exports = router;
