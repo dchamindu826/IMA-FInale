@@ -224,4 +224,65 @@ const getDownloadRecording = async (req, res) => {
     }
 };
 
-module.exports = { index, classRoom, viewModule, viewZoom, viewYoutubeLive, startExam, paperComplete, addUserAnswer, updateUserAnswer, getDownloadRecording };
+// ළමයාගේ Dashboard එකට Data ගන්න API එක
+const getStudentDashboard = async (req, res) => {
+    try {
+        const userId = req.user.id; // Token එකෙන් එන ළමයාගේ ID එක
+
+        // 1. ළමයා Register වෙලා තියෙන Courses ටික හොයනවා
+        const enrolledCourses = await prisma.course_user.findMany({
+            where: { user_id: BigInt(userId) }
+        });
+        const courseIds = enrolledCourses.map(e => e.course_id);
+
+        // 2. ඒ Courses අයිති Groups, Batches, Businesses හොයනවා
+        const courses = await prisma.courses.findMany({ where: { id: { in: courseIds } } });
+        const groupIds = [...new Set(courses.map(c => c.group_id))];
+        
+        const groups = await prisma.groups.findMany({ where: { id: { in: groupIds } } });
+        const batchIds = [...new Set(groups.map(g => g.batch_id))];
+        
+        const batches = await prisma.batches.findMany({ where: { id: { in: batchIds } } });
+        const businessIds = [...new Set(batches.map(b => b.business_id))];
+
+        // 3. Announcements ටික ගන්නවා (Global ඒවයි, ළමයාගේ පන්ති වල ඒවයි විතරක්)
+        const announcements = await prisma.announcements.findMany({
+            where: {
+                OR: [
+                    { business_id: null, batch_id: null }, // හැමෝටම පේන ඒවා
+                    { business_id: { in: businessIds } },  // ළමයාගේ Business එකේ ඒවා
+                    { batch_id: { in: batchIds } }         // ළමයාගේ Batch එකේ ඒවා
+                ]
+            },
+            orderBy: { created_at: 'desc' },
+            take: 10
+        });
+
+        // 4. Posts (Feed) ටික ගන්නවා
+        const posts = await prisma.posts.findMany({
+            where: {
+                OR: [
+                    { business_id: null, batch_id: null },
+                    { business_id: { in: businessIds } },
+                    { batch_id: { in: batchIds } }
+                ]
+            },
+            orderBy: { created_at: 'desc' },
+            take: 10
+        });
+
+        return res.status(200).json(safeJson({
+            enrolledCount: courseIds.length,
+            announcements,
+            posts
+        }));
+
+    } catch (error) {
+        console.error("Student Dashboard Error:", error);
+        return res.status(500).json({ message: "Server Error" });
+    }
+};
+
+
+module.exports = { index, classRoom, viewModule, viewZoom, viewYoutubeLive, startExam, paperComplete, 
+                    addUserAnswer, updateUserAnswer, getDownloadRecording, getStudentDashboard };

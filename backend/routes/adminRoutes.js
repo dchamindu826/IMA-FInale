@@ -62,6 +62,8 @@ const userImgStorage = multer.diskStorage({
 const uploadUserImg = multer({ storage: userImgStorage });
 
 
+
+
 // --- ROUTES ---
 
 
@@ -162,6 +164,6 @@ router.put('/batch/update', protect, uploadIcon.single('logo'), updateBatch);
 router.put('/batch/status', protect, changeBatchStatus);
 router.delete('/batch/delete', protect, deleteBatch);
 
-
+router.get('/admin/overview', protect, getManagerOverview);
 
 module.exports = router;

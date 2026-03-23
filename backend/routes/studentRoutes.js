@@ -35,6 +35,7 @@ const userImgStorage = multer.diskStorage({
     }
 });
 const uploadUserImg = multer({ storage: userImgStorage });
+const { getStudentDashboard } = require('../controllers/studentController');
 
 
 // ====== PAYMENT ROUTES ======
@@ -73,6 +74,8 @@ router.put('/student/profile/update', protect, updateProfile);
 router.put('/student/profile/picture-update', protect, uploadUserImg.single('profileImg'), updateProfilePic);
 router.delete('/student/profile/picture-delete', protect, deleteProfilePic);
 router.put('/student/profile/password-update', protect, updatePassword);
+
+router.get('/dashboard', protect, getStudentDashboard);
 
 
 

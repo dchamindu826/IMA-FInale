@@ -4,6 +4,23 @@ import toast from 'react-hot-toast';
 import api from '../../api/axios';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 
+// 🔴 Fix: DarkInput එක Main function එකෙන් එළියට ගත්තා (Lock වෙන එක නැති කරන්න) 🔴
+const DarkInput = ({ label, name, required, type = "text", placeholder, options, value, onChange }) => (
+  <div>
+    <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
+      {label} {required && <span className="text-blue-500">*</span>}
+    </label>
+    {options ? (
+      <select name={name} required={required} value={value} onChange={onChange} className="w-full bg-[#030712]/50 border border-white/5 rounded-xl p-3.5 text-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-sm">
+        <option value="" disabled className="bg-slate-900">Select a District</option>
+        {options.map(opt => <option key={opt} value={opt} className="bg-slate-900">{opt}</option>)}
+      </select>
+    ) : (
+      <input type={type} name={name} required={required} value={value} onChange={onChange} placeholder={placeholder} className="w-full bg-[#030712]/50 border border-white/5 rounded-xl p-3.5 text-gray-200 placeholder-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-sm" />
+    )}
+  </div>
+);
+
 export default function Register() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -24,7 +41,6 @@ export default function Register() {
     e.preventDefault();
     setLoading(true);
     try {
-      // 🔥 මෙතනත් '/auth/register' කියලා දැම්මා
       await api.post('/auth/register', formData); 
       toast.success("Account created successfully! Please login.");
       navigate('/login');
@@ -35,56 +51,38 @@ export default function Register() {
     }
   };
 
-  // පොඩි Component එකක් Inputs ලස්සනට පෙන්නන්න
-  const DarkInput = ({ label, name, required, type = "text", placeholder, options }) => (
-    <div>
-      <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 block">
-        {label} {required && <span className="text-blue-500">*</span>}
-      </label>
-      {options ? (
-        <select name={name} required={required} value={formData[name]} onChange={handleChange} className="w-full bg-[#030712]/50 border border-white/5 rounded-xl p-3.5 text-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-sm">
-          <option value="" disabled className="bg-slate-900">Select a District</option>
-          {options.map(opt => <option key={opt} value={opt} className="bg-slate-900">{opt}</option>)}
-        </select>
-      ) : (
-        <input type={type} name={name} required={required} value={formData[name]} onChange={handleChange} placeholder={placeholder} className="w-full bg-[#030712]/50 border border-white/5 rounded-xl p-3.5 text-gray-200 placeholder-gray-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all text-sm" />
-      )}
-    </div>
-  );
-
   return (
     <div className="relative min-h-screen bg-[#0A0F1C] flex items-center justify-center p-4 py-10 font-sans overflow-hidden">
       
-      {/* 🔥 EXACT BACKGROUND GLOWS MATCHING YOUR SCREENSHOT 🔥 */}
       <div className="absolute top-0 left-0 w-[50rem] h-[50rem] bg-blue-600/20 rounded-full blur-[130px] -translate-x-1/2 -translate-y-1/2 pointer-events-none fixed"></div>
       <div className="absolute bottom-0 right-0 w-[50rem] h-[50rem] bg-red-600/20 rounded-full blur-[130px] translate-x-1/3 translate-y-1/3 pointer-events-none fixed"></div>
 
       <div className="relative z-10 w-full max-w-4xl bg-[#111827]/80 backdrop-blur-xl border border-white/5 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.5)] p-8 md:p-12">
         
         <div className="text-center mb-10">
-          <img src="/logo.png" alt="Logo" className="h-50 mx-auto -mb-6 drop-shadow-lg" />
+          <img src="/logo.png" alt="Logo" className="h-16 mx-auto mb-4 drop-shadow-lg" />
           <h2 className="text-2xl font-bold text-white tracking-wide">Create an account</h2>
           <p className="text-gray-400 text-xs mt-2">Fill in your details to join the portal</p>
         </div>
 
         <form onSubmit={handleRegister} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DarkInput label="First Name" name="fName" required placeholder="John" />
-            <DarkInput label="Second Name" name="lName" required placeholder="Doe" />
-            <DarkInput label="Phone Number" name="phone" type="tel" required placeholder="07********" />
-            <DarkInput label="Secondary Number" name="directPhone" type="tel" placeholder="07********" />
+            <DarkInput label="First Name" name="fName" required placeholder="John" value={formData.fName} onChange={handleChange} />
+            <DarkInput label="Second Name" name="lName" required placeholder="Doe" value={formData.lName} onChange={handleChange} />
+            <DarkInput label="Phone Number" name="phone" type="tel" required placeholder="07********" value={formData.phone} onChange={handleChange} />
+            <DarkInput label="Secondary Number" name="directPhone" type="tel" placeholder="07********" value={formData.directPhone} onChange={handleChange} />
             
             <div className="md:col-span-2">
-              <DarkInput label="NIC" name="nic" required placeholder="991922757V / 199919202757" />
+              <DarkInput label="NIC" name="nic" required placeholder="991922757V / 199919202757" value={formData.nic} onChange={handleChange} />
             </div>
 
-            <DarkInput label="House Number" name="houseNoVal" placeholder="123/A" />
-            <DarkInput label="Street Name" name="streetNameVal" required placeholder="Main Street" />
+            <DarkInput label="House Number" name="houseNoVal" placeholder="123/A" value={formData.houseNoVal} onChange={handleChange} />
+            <DarkInput label="Street Name" name="streetNameVal" required placeholder="Main Street" value={formData.streetNameVal} onChange={handleChange} />
             
             <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <DarkInput label="Village" name="villageVal" required placeholder="Your Village" />
-                <DarkInput label="Town" name="townVal" required placeholder="Your Town" />
-                <DarkInput label="District" name="districtVal" required options={districts} />
+                <DarkInput label="Village" name="villageVal" required placeholder="Your Village" value={formData.villageVal} onChange={handleChange} />
+                <DarkInput label="Town" name="townVal" required placeholder="Your Town" value={formData.townVal} onChange={handleChange} />
+                <DarkInput label="District" name="districtVal" required options={districts} value={formData.districtVal} onChange={handleChange} />
             </div>
 
             <div className="md:col-span-2">

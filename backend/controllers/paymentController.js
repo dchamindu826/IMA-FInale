@@ -6,6 +6,7 @@ const path = require('path');
 const prisma = new PrismaClient();
 const safeJson = (data) => JSON.parse(JSON.stringify(data, (key, value) => typeof value === 'bigint' ? value.toString() : value));
 const generateMD5 = (str) => crypto.createHash('md5').update(str).digest('hex').toUpperCase();
+const { verifySlipImage } = require('../services/geminiService');
 
 // --- 1. PayHere Online Payment Success Notify ---
 const onlinePaymentSuccessNotify = async (req, res) => {
@@ -219,12 +220,64 @@ const uploadSlip = async (req, res) => {
             await prisma.course_user.create({ data: { user_id: BigInt(userId), course_id: payment.course_id, pType: courseData.group.type } });
         }
 
-        return res.status(200).json({ message: 'Payment Slip Uploaded Successfully! Your payment will be approved within 24 hours.' });
+        // 🔥 AI Verification Process (දැන් මේක තියෙන්නේ try block එක ඇතුලේ) 🔥
+        setTimeout(async () => {
+            try {
+                const imagePath = path.join(__dirname, '../public/slipImages/', imageName);
+                const aiResult = await verifySlipImage(imagePath);
+                
+                if (aiResult.status === 'SUCCESS') {
+                    const extracted = aiResult.data;
+                    const expectedAmount = parseFloat(payment.subjectAmount || payment.amount);
+                    const extractedAmount = parseFloat(extracted.amount);
+                    
+                    let aiStatus = 'MISMATCHED';
+                    let finalPaymentStatus = -1; // Keep Pending by default
+
+                    // 💡 Decision Engine Logic
+                    if (extracted.isClear && extractedAmount === expectedAmount) {
+                        aiStatus = 'MATCHED';
+                        finalPaymentStatus = 1; // Auto Approve!
+                    } else if (!extracted.isClear) {
+                        aiStatus = 'UNREADABLE';
+                    }
+
+                    // Database එකට AI Result එක සේව් කරනවා
+                    await prisma.slip_verifications.create({
+                        data: {
+                            payment_id: payment.id,
+                            ai_status: aiStatus,
+                            ai_confidence: extracted.isClear ? 90.0 : 40.0,
+                            extracted_amount: extractedAmount,
+                            extracted_date: extracted.date,
+                            extracted_ref: extracted.referenceNo,
+                            raw_ai_response: aiResult.raw
+                        }
+                    });
+
+                    // Auto Approve උනා නම් Payment එක Update කරනවා
+                    if (finalPaymentStatus === 1) {
+                        await prisma.payments.update({
+                            where: { id: payment.id },
+                            data: { status: 1, approver_id: 9999 } // 9999 = AI System ID
+                        });
+                        await prisma.payments.updateMany({ 
+                            where: { isLinked: true, linked: payment.id }, 
+                            data: { status: 1, approver_id: 9999 } 
+                        });
+                    }
+                }
+            } catch (e) {
+                console.error("AI Slip Verification Failed for Payment ID:", payment.id, e);
+            }
+        }, 0);
+
+        // Client ට ඉක්මනින් response එක යවනවා (AI එක background එකේ දුවනවා)
+        return res.status(200).json({ message: 'Payment Slip Uploaded Successfully! Your payment will be verified soon.' });
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }
 };
-
 const updateSlip = async (req, res) => {
     try {
         const { mainPaymentId } = req.body;

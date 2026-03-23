@@ -744,3 +744,83 @@ model class_schedules {
   content     String   @db.Text
   created_at  DateTime @default(now())
 }
+
+model slip_verifications {
+  id               BigInt    @id @default(autoincrement())
+  payment_id       BigInt    @unique
+  ai_status        String    // "MATCHED", "MISMATCHED", "UNREADABLE"
+  ai_confidence    Float     // 0.0 to 100.0
+  extracted_amount Float?
+  extracted_date   String?
+  extracted_ref    String?
+  raw_ai_response  String?   @db.Text
+  is_manually_reviewed Boolean @default(false)
+  reviewer_id      Int?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+}
+
+// --- CRM Tables ---
+
+// Manager හදන Campaign Settings (Free Seminar & After Seminar)
+model crm_campaigns {
+  id                    Int      @id @default(autoincrement())
+  batch_id              BigInt
+  phase                 String   // "FREE_SEMINAR" or "AFTER_SEMINAR"
+  
+  // Meta API Credentials
+  meta_number           String?
+  meta_phone_id         String?
+  meta_wa_id            String?
+  meta_access_token     String? @db.Text
+  
+  // AI Bot Settings
+  gemini_keys           Json?    // ["key1", "key2", "key3", "key4", "key5"]
+  
+  // Bot Toggles (දෙකම එකවර ON වෙන්න බෑ)
+  is_gemini_active      Boolean  @default(false)
+  is_auto_reply_active  Boolean  @default(false)
+  
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
+  
+  auto_replies          auto_replies[]
+}
+
+// Auto Reply Messages (1st, 2nd, 3rd replies)
+model auto_replies {
+  id              Int      @id @default(autoincrement())
+  campaign_id     Int
+  sequence_order  Int      // 1 වෙනි මැසේජ් එක, 2 වෙනි මැසේජ් එක...
+  message_text    String?  @db.Text
+  media_url       String?  // Image/Doc/Audio/Video URL
+  media_type      String?  // "image", "document", "audio", "video"
+  
+  campaign        crm_campaigns @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
+}
+
+
+
+// WhatsApp Leads (මෙන්න මේ නම වෙනස් කරන්න)
+model whatsapp_leads {
+  id                 Int      @id @default(autoincrement())
+  phone_number       String   @unique
+  customer_name      String?
+  phase              String   @default("FREE_SEMINAR") 
+  status             String   @default("New") 
+  assigned_to        BigInt?  
+  last_message_time  DateTime?
+  unread_count       Int      @default(0)
+  
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+}
+
+// --- RAG Knowledge Base (PDF Ingestion) ---
+model crm_documents {
+  id          Int      @id @default(autoincrement())
+  phase       String   // "FREE_SEMINAR" or "AFTER_SEMINAR"
+  file_name   String
+  content     String   @db.LongText
+  created_at  DateTime @default(now())
+}

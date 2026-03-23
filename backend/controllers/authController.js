@@ -36,7 +36,7 @@ const createUser = async (req, res) => {
                 password: hashedPassword,
                 phone,
                 nic,
-                role,
+                role: role || 'user',
                 image: imageName,
                 status: 1,
                 created_at: new Date(),

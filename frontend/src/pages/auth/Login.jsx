@@ -29,9 +29,12 @@ export default function Login({ setLoggedInUser }) {
         if(role === 'user' || role === 'student') {
             navigate('/student/dashboard');
         } else if (role === 'Manager' || role === 'Ass Manager') {
-            navigate('/manager/dashboard'); // 🔥 අලුත් Manager Route එක
+            navigate('/manager/dashboard'); 
         } else if (role === 'Coordinator') {
-            navigate('/coordinator/dashboard'); // ඉස්සරහට එන ඒවා
+            navigate('/coordinator/dashboard');
+        } else if (role === 'Finance') {
+            // 🔴 Finance Department එකට අදාළ Redirect එක
+            navigate('/admin/finance'); 
         } else {
             navigate('/admin/dashboard'); // Default (System Admin / Director)
         }

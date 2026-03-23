@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { UserPlus, Search, Edit2, Trash2, Loader2, X, Shield, Briefcase, Users, UserCircle } from 'lucide-react';
+import { UserPlus, Search, Edit2, Trash2, Loader2, X, Shield, Briefcase, Users, UserCircle, DollarSign } from 'lucide-react';
 import api from '../../api/axios';
 
 export default function StaffManager() {
@@ -30,7 +30,6 @@ export default function StaffManager() {
   const handleCreateStaff = async (e) => {
     e.preventDefault();
     try {
-      // 🔥 මෙන්න මේ පේළිය වෙනස් කලා. කලින් තිබ්බේ /admin/staff කියලා 🔥
       await api.post('/admin/staff/add', newStaff); 
       toast.success("Staff registered successfully!");
       setNewStaff({ fName: '', lName: '', phone: '', nic: '', role: 'Coordinator', password: '' });
@@ -67,15 +66,16 @@ export default function StaffManager() {
     s.role?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // 🔥 Fix: "Other Staff" එකකුත් දැම්මා, Role එක match වුණේ නැති අය මේකට වැටෙනවා 🔥
-  const knownRoles = ["System Admin", "Director", "Manager", "Ass Manager", "Coordinator"];
+  // 🔴 Finance කියන අලුත් Role එක ඇතුළත් කළා
+  const knownRoles = ["System Admin", "Director", "Manager", "Ass Manager", "Coordinator", "Finance"];
   
   const rolesGroups = [
     { title: "System Admins", role: "System Admin", icon: <Shield size={16} className="text-red-400" /> },
     { title: "Directors", role: "Director", icon: <Briefcase size={16} className="text-yellow-400" /> },
     { title: "Managers", role: "Manager", icon: <UserCircle size={16} className="text-blue-400" /> },
     { title: "Assistant Managers", role: "Ass Manager", icon: <UserCircle size={16} className="text-purple-400" /> },
-    { title: "Coordinators", role: "Coordinator", icon: <Users size={16} className="text-emerald-400" /> },
+    { title: "Finance Department", role: "Finance", icon: <DollarSign size={16} className="text-emerald-400" /> }, // 🔴 Finance Group
+    { title: "Coordinators", role: "Coordinator", icon: <Users size={16} className="text-cyan-400" /> },
     { title: "Other Staff", role: "Other", icon: <Users size={16} className="text-slate-400" /> }
   ];
 
@@ -117,11 +117,13 @@ export default function StaffManager() {
             <input required type="text" placeholder="Contact Number" value={newStaff.phone} onChange={e => setNewStaff({...newStaff, phone: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-white outline-none focus:border-blue-400 transition-all placeholder-slate-400" />
             <input required type="text" placeholder="NIC Number" value={newStaff.nic} onChange={e => setNewStaff({...newStaff, nic: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-white outline-none focus:border-blue-400 transition-all placeholder-slate-400" />
             
+            {/* 🔴 Dropdown එකට Finance එකතු කළා */}
             <select value={newStaff.role} onChange={e => setNewStaff({...newStaff, role: e.target.value})} className="w-full bg-black/20 border border-white/10 rounded-xl p-3 text-sm text-white outline-none focus:border-blue-400 transition-all cursor-pointer">
               <option value="System Admin" className="bg-slate-800">System Admin</option>
               <option value="Director" className="bg-slate-800">Director</option>
               <option value="Manager" className="bg-slate-800">Manager</option>
               <option value="Ass Manager" className="bg-slate-800">Ass Manager</option>
+              <option value="Finance" className="bg-slate-800">Finance Department</option>
               <option value="Coordinator" className="bg-slate-800">Coordinator</option>
               <option value="teacher" className="bg-slate-800">Teacher</option>
             </select>
@@ -140,7 +142,6 @@ export default function StaffManager() {
              <div className="flex items-center justify-center p-10"><Loader2 className="animate-spin text-blue-400" size={40}/></div>
           ) : (
             rolesGroups.map((group, idx) => {
-              // 🔥 Fix: Known roles වල නැති අයව Other වලට දානවා 🔥
               let groupStaff = [];
               if (group.role === "Other") {
                 groupStaff = filteredStaff.filter(s => !knownRoles.includes(s.role));
@@ -213,6 +214,7 @@ export default function StaffManager() {
                 <option value="Director" className="bg-slate-800">Director</option>
                 <option value="Manager" className="bg-slate-800">Manager</option>
                 <option value="Ass Manager" className="bg-slate-800">Ass Manager</option>
+                <option value="Finance" className="bg-slate-800">Finance Department</option> {/* 🔴 Edit Modal එකටත් දැම්මා */}
                 <option value="Coordinator" className="bg-slate-800">Coordinator</option>
               </select>
               <input type="password" onChange={e => setEditingStaff({...editingStaff, password: e.target.value})} className="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-white outline-none focus:border-blue-400 transition-all" placeholder="New Password (leave blank to keep current)" />
