@@ -31,7 +31,7 @@ import ManagerStaff from './pages/manager/ManagerStaff';
 import ManagerTasks from './pages/manager/ManagerTasks';
 import ManagerPayments from './pages/manager/ManagerPayments';
 import ManagerCRM from './pages/manager/ManagerCRM';
-import CrmSetup from './pages/manager/CrmSetup';
+
 
 // --- Coordinators imports ---
 import CoordinatorDashboard from './pages/coordinator/CoordinatorDashboard';
@@ -109,7 +109,7 @@ function App() {
           <Route path="manager/content-hub" element={<ContentHub />} />
           <Route path="manager/payments" element={<ManagerPayments />} />
           <Route path="manager/crm" element={<ManagerCRM />} />
-          <Route path="manager/crm-setup" element={<CrmSetup />} />
+          
 
           {/* --- COORDINATOR ROUTES --- */}
           <Route path="coordinator/dashboard" element={<CoordinatorDashboard />} />

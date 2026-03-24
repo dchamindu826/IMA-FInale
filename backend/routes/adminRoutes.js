@@ -13,7 +13,8 @@ const {
     addContentGroup, updateContentGroup, deleteContentGroup,
     addClass, addRecording, addDocument, deleteContent, getManagerBatches, getBatchSchedule,
     getCoordinatorOverview, getManagerFullBatches, addContentMassAssign, getCourseContents,
-    updateBatch, changeBatchStatus, deleteBatch, getManagerOverview
+    updateBatch, changeBatchStatus, deleteBatch, getManagerOverview,
+    getBusinessCrm, saveBusinessCrm, uploadCrmMedia, getKnowledgeBase, addKnowledgeBase, deleteKnowledgeBase
 } = require('../controllers/adminController');
 
 const { addPaper, addStructuredPaper, addMarkingAnswer } = require('../controllers/paperController');
@@ -159,11 +160,21 @@ router.get('/coordinator/overview', protect, getCoordinatorOverview);
 router.get('/manager/batches-full', protect, getManagerFullBatches);
 router.post('/manager/contents/mass-assign', protect, uploadDoc.single('file'), addContentMassAssign);
 
-router.get('/manager/courses/:courseId/contents', protect, getCourseContents);
+router.get('/manager/get-contents', protect, getCourseContents);
 router.put('/batch/update', protect, uploadIcon.single('logo'), updateBatch);
 router.put('/batch/status', protect, changeBatchStatus);
 router.delete('/batch/delete', protect, deleteBatch);
 
-router.get('/admin/overview', protect, getManagerOverview);
+router.get('/overview', protect, getManagerOverview);
+
+// CRM Routes (මේ ටික ෆයිල් එකේ අගට දාන්න)
+router.get('/business/:businessId/crm', protect, getBusinessCrm);
+router.post('/business/crm/save', protect, saveBusinessCrm);
+
+// Media & Knowledge Base Uploads (දැනට documents folder එකම පාවිච්චි කරනවා)
+router.post('/business/crm/media', protect, uploadDoc.single('file'), uploadCrmMedia);
+router.get('/business/crm/knowledge-base', protect, getKnowledgeBase);
+router.post('/business/crm/knowledge-base', protect, uploadDoc.single('file'), addKnowledgeBase);
+router.delete('/business/crm/knowledge-base/:docId', protect, deleteKnowledgeBase);
 
 module.exports = router;

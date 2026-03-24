@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Briefcase, Users, PieChart, CalendarDays, ListTodo, MonitorPlay, CreditCard, Bot, FileCheck2, BookOpen, MessageSquare, Settings2, PhoneCall } from 'lucide-react';
+import { LayoutDashboard, Briefcase, Users, PieChart, CalendarDays, ListTodo, MonitorPlay, CreditCard, Bot, FileCheck2, BookOpen, MessageSquare, PhoneCall } from 'lucide-react';
 
 export default function Sidebar({ userRole }) {
   const navLinkClass = ({ isActive }) => 
@@ -40,7 +40,7 @@ export default function Sidebar({ userRole }) {
                <NavLink to="/manager/content-hub" className={navLinkClass}><MonitorPlay size={20} /> Content Hub</NavLink>
                {/* 🔴 මෙන්න CRM ලින්ක් එක 🔴 */}
                <NavLink to="/manager/crm" className={navLinkClass}><MessageSquare size={20} /> WhatsApp CRM</NavLink>
-               <NavLink to="/manager/crm-setup" className={navLinkClass}><Settings2 size={20} /> Setup CRM</NavLink>
+               
              </>
           )}
 

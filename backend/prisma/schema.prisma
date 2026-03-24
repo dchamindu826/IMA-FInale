@@ -78,6 +78,7 @@ model batches {
   logo        String?   @db.Text
   canEnroll   Int       @default(1)
   itemOrder   Int       @default(1)
+  streams     String?   @db.Text     // 🔥 මේ පේළිය අලුතෙන් එකතු කරන්න 🔥
   created_at  DateTime? @db.Timestamp(0)
   updated_at  DateTime? @db.Timestamp(0)
 
@@ -90,6 +91,7 @@ model businesses {
   logo                             String    @db.Text
   description                      String    @db.Text
   category                         String    @db.Text
+  streams                          String?   @db.Text // 🔥 මේ පේළිය අලුතෙන් දාන්න 🔥
   status                           Int       @default(1)
   isEnglish                        Boolean   @default(false)
   minCourseCount                   Int?
@@ -99,7 +101,6 @@ model businesses {
   created_at                       DateTime? @db.Timestamp(0)
   updated_at                       DateTime? @db.Timestamp(0)
   
-  // 🔥 මේ පේළි දෙක හරියටම මෙතන තියෙන්න ඕනේ 🔥
   head_manager_id                  Int?
   ass_manager_id                   Int?
 }
@@ -120,8 +121,11 @@ model content_course {
 model content_groups {
   id          BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
   title       String
+  type        Int?      // 🔥 මේ පේළිය අලුතෙන් එකතු කරන්න (1=Live, 2=Rec, 3=Doc...)
   itemOrder   Int       @default(1)
-  business_id BigInt    @db.UnsignedBigInt
+  business_id BigInt?   @db.UnsignedBigInt
+  batch_id    BigInt?   @db.UnsignedBigInt
+  course_code String?   @db.VarChar(100)
   created_at  DateTime? @db.Timestamp(0)
   updated_at  DateTime? @db.Timestamp(0)
 
@@ -253,14 +257,15 @@ model failed_jobs {
 }
 
 model groups {
-  id         BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
-  name       String
-  status     Int       @default(1)
-  type       Int
-  batch_id   BigInt    @db.UnsignedBigInt
-  itemOrder  Int       @default(1)
-  created_at DateTime? @db.Timestamp(0)
-  updated_at DateTime? @db.Timestamp(0)
+  id             BigInt    @id @default(autoincrement()) @db.UnsignedBigInt
+  name           String
+  status         Int       @default(1)
+  type           Int
+  batch_id       BigInt    @db.UnsignedBigInt
+  itemOrder      Int       @default(1)
+  discount_rules String?   @db.Text     // 🔥 මේ පේළිය අලුතෙන් එකතු කරන්න 🔥
+  created_at     DateTime? @db.Timestamp(0)
+  updated_at     DateTime? @db.Timestamp(0)
 
   @@index([batch_id], map: "groups_batch_id_foreign")
 }
@@ -765,14 +770,15 @@ model slip_verifications {
 // Manager හදන Campaign Settings (Free Seminar & After Seminar)
 model crm_campaigns {
   id                    Int      @id @default(autoincrement())
-  batch_id              BigInt
+  business_id           BigInt?
+  batch_id              BigInt?
   phase                 String   // "FREE_SEMINAR" or "AFTER_SEMINAR"
-  
+
   // Meta API Credentials
   meta_number           String?
   meta_phone_id         String?
   meta_wa_id            String?
-  meta_access_token     String? @db.Text
+  meta_access_token     String?  @db.Text
   
   // AI Bot Settings
   gemini_keys           Json?    // ["key1", "key2", "key3", "key4", "key5"]
@@ -799,9 +805,7 @@ model auto_replies {
   campaign        crm_campaigns @relation(fields: [campaign_id], references: [id], onDelete: Cascade)
 }
 
-
-
-// WhatsApp Leads (මෙන්න මේ නම වෙනස් කරන්න)
+// WhatsApp Leads 
 model whatsapp_leads {
   id                 Int      @id @default(autoincrement())
   phone_number       String   @unique
@@ -819,6 +823,7 @@ model whatsapp_leads {
 // --- RAG Knowledge Base (PDF Ingestion) ---
 model crm_documents {
   id          Int      @id @default(autoincrement())
+  business_id BigInt?  // 🔥 මේ පේළිය අනිවාර්යයෙන්ම අලුතෙන් එකතු කරන්න 🔥
   phase       String   // "FREE_SEMINAR" or "AFTER_SEMINAR"
   file_name   String
   content     String   @db.LongText
